@@ -1,133 +1,55 @@
 <?php
-/**
- * Laravel - A clean and classy framework for PHP web development.
- *
- * @package  Laravel
- * @version  1.0.0 Beta 1
- * @author   Taylor Otwell
- * @license  MIT License
- * @link     http://laravel.com 
- */
 
-// --------------------------------------------------------------
-// Set the framework starting time.
-// --------------------------------------------------------------
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
+
 define('LARAVEL_START', microtime(true));
 
-// --------------------------------------------------------------
-// Define the framework paths.
-// --------------------------------------------------------------
-define('APP_PATH', realpath('../application').'/');
-define('SYS_PATH', realpath('../system').'/');
-define('BASE_PATH', realpath('../').'/');
+/*
+|--------------------------------------------------------------------------
+| Check If The Application Is Under Maintenance
+|--------------------------------------------------------------------------
+|
+| If the application is in maintenance / demo mode via the "down" command
+| we will load this file so that any pre-rendered content can be shown
+| instead of starting the framework, which could cause an exception.
+|
+*/
 
-// --------------------------------------------------------------
-// Define the PHP file extension.
-// --------------------------------------------------------------
-define('EXT', '.php');
-
-// --------------------------------------------------------------
-// Load the configuration and string classes.
-// --------------------------------------------------------------
-require SYS_PATH.'config'.EXT;
-require SYS_PATH.'str'.EXT;
-
-// --------------------------------------------------------------
-// Register the auto-loader.
-// --------------------------------------------------------------
-spl_autoload_register(require SYS_PATH.'loader'.EXT);
-
-// --------------------------------------------------------------
-// Set the Laravel starting time in the Benchmark class.
-// --------------------------------------------------------------
-System\Benchmark::$marks['laravel'] = LARAVEL_START;
-
-// --------------------------------------------------------------
-// Set the error reporting level.
-// --------------------------------------------------------------
-error_reporting((System\Config::get('error.detail')) ? E_ALL | E_STRICT : 0);
-
-// --------------------------------------------------------------
-// Register the error handlers.
-// --------------------------------------------------------------
-set_exception_handler(function($e)
-{
-	System\Error::handle($e);	
-});
-
-set_error_handler(function($number, $error, $file, $line) 
-{
-	System\Error::handle(new ErrorException($error, 0, $number, $file, $line));
-});
-
-register_shutdown_function(function()
-{
-	if ( ! is_null($error = error_get_last()))
-	{
-		System\Error::handle(new ErrorException($error['message'], 0, $error['type'], $error['file'], $error['line']));
-	}	
-});
-
-// --------------------------------------------------------------
-// Set the default timezone.
-// --------------------------------------------------------------
-date_default_timezone_set(System\Config::get('application.timezone'));
-
-// --------------------------------------------------------------
-// Load the session.
-// --------------------------------------------------------------
-if (System\Config::get('session.driver') != '')
-{
-	System\Session::load();
+if (file_exists(__DIR__.'/../storage/framework/maintenance.php')) {
+    require __DIR__.'/../storage/framework/maintenance.php';
 }
 
-// --------------------------------------------------------------
-// Execute the global "before" filter.
-// --------------------------------------------------------------
-$response = System\Filter::call('before');
+/*
+|--------------------------------------------------------------------------
+| Register The Auto Loader
+|--------------------------------------------------------------------------
+|
+| Composer provides a convenient, automatically generated class loader for
+| this application. We just need to utilize it! We'll simply require it
+| into the script here so we don't need to manually load our classes.
+|
+*/
 
-// --------------------------------------------------------------
-// Only execute the route function if the "before" filter did
-// not override by sending a response.
-// --------------------------------------------------------------
-if (is_null($response))
-{
-	// ----------------------------------------------------------
-	// Route the request to the proper route.
-	// ----------------------------------------------------------
-	$route = System\Router::route(Request::method(), Request::uri());
+require __DIR__.'/../vendor/autoload.php';
 
-	// ----------------------------------------------------------
-	// Execute the route function.
-	// ----------------------------------------------------------
-	if ( ! is_null($route))
-	{
-		$response = $route->call();	
-	}
-	else
-	{
-		$response = System\Response::view('error/404', 404);
-	}
-}
-else
-{
-	$response = ( ! $response instanceof System\Response) ? new System\Response($response) : $response;
-}
+/*
+|--------------------------------------------------------------------------
+| Run The Application
+|--------------------------------------------------------------------------
+|
+| Once we have the application, we can handle the incoming request using
+| the application's HTTP kernel. Then, we will send the response back
+| to this client's browser, allowing them to enjoy our application.
+|
+*/
 
-// ----------------------------------------------------------
-// Execute the global "after" filter.
-// ----------------------------------------------------------
-System\Filter::call('after', array($response));
+$app = require_once __DIR__.'/../bootstrap/app.php';
 
-// --------------------------------------------------------------
-// Close the session.
-// --------------------------------------------------------------
-if (System\Config::get('session.driver') != '')
-{
-	System\Session::close();
-}
+$kernel = $app->make(Kernel::class);
 
-// --------------------------------------------------------------
-// Send the response to the browser.
-// --------------------------------------------------------------
-$response->send();
+$response = tap($kernel->handle(
+    $request = Request::capture()
+))->send();
+
+$kernel->terminate($request, $response);
