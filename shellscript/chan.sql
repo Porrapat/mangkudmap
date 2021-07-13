@@ -1,0 +1,1 @@
+SELECT COUNT(*) FROM thailand_province WHERE province_name='จันทบุรี';
