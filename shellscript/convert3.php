@@ -5,16 +5,17 @@
     $servername = "localhost";
     $username = "root";
     $password = "1234";
+    $dbname = "mangkudmap";
 
     // Create connection
-    $conn = new mysqli($servername, $username, $password);
+    $conn = new mysqli($servername, $username, $password, $dbname);
 
     // Check connection
     if ($conn->connect_error) {
         die("Connection failed: " . $conn->connect_error);
     }
 
-    mysqli_set_charset($conn, "utf8mb4");
+    // mysqli_set_charset($conn, "utf8mb4");
 
     echo "Connected successfully";
     echo "\n";
@@ -28,15 +29,15 @@
         echo $result[0];
         echo "\n";
 
-        $sql = "SELECT id FROM thailand_province WHERE province_name='".iconv("ISO-8859-1","utf8mb4",$result[0])."'";
+        $sql = "SELECT id FROM thailand_province WHERE province_name='".$result[0]."'";
         echo $sql;
         // exit;
         // echo "\n";
         $result = $conn->query($sql);
         // print_r($result['id']);
         // echo $result->num_rows;
-        var_dump($result->num_rows);
-        exit;
+        // var_dump($result->num_rows);
+        // exit;
 
         if ($result->num_rows > 0) {
         // output data of each row
